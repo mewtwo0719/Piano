@@ -50,7 +50,7 @@ function startNote(key) {
   osc.frequency.value = mapping.note;
 
   const now = audioCtx.currentTime;
-  const g = 0.22 * loudnessCompensation(mapping.note);
+  const g = 0.33 * loudnessCompensation(mapping.note);
 
   gain.gain.setValueAtTime(0, now);
   gain.gain.linearRampToValueAtTime(g, now + 0.05);
@@ -69,8 +69,8 @@ function stopNote(key) {
   if (!note) return;
 
   const now = audioCtx.currentTime;
-  note.gain.gain.linearRampToValueAtTime(0, now + 0.25);
-  note.osc.stop(now + 0.3);
+  note.gain.gain.linearRampToValueAtTime(0, now + 0.5);
+  note.osc.stop(now + 0.55);
 
   activeNotes.delete(key);
   const mapping = findNote(key);
