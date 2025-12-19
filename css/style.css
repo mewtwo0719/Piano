@@ -45,12 +45,6 @@ h1 {
   color: #333;
 }
 
-.key.active {
-  background: linear-gradient(#4cf, #29b);
-  box-shadow: 0 0 25px #3cf, inset 0 -4px 0 #1a8;
-  transform: translateY(4px);
-}
-
 /* Melody cards */
 .melody-grid {
   display: grid;
@@ -107,4 +101,24 @@ button:hover {
   to {
     transform: translateY(110vh);
   }
+}
+
+.key {
+  position: relative;
+  overflow: hidden;
+}
+
+.key-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 0%;
+  background: linear-gradient(
+    to top,
+    rgba(0, 150, 255, 0.6),
+    rgba(0, 200, 255, 0.3)
+  );
+  pointer-events: none;
+  transition: height 0.1s linear;
 }

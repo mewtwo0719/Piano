@@ -17,14 +17,31 @@ const keyMap = [
 const activeNotes = new Map();
 const piano = document.getElementById("piano");
 
+// keyMap.forEach((k) => {
+//   const div = document.createElement("div");
+//   div.className = "key";
+//   div.dataset.key = k.keys[0];
+//   div.innerHTML = `<span>${k.keys[0].toUpperCase()}</span>`;
+//   div.onmousedown = () => startNote(k.keys[0]);
+//   div.onmouseup = () => stopNote(k.keys[0]);
+//   div.onmouseleave = () => stopNote(k.keys[0]);
+//   piano.appendChild(div);
+// });
+
 keyMap.forEach((k) => {
   const div = document.createElement("div");
   div.className = "key";
   div.dataset.key = k.keys[0];
-  div.innerHTML = `<span>${k.keys[0].toUpperCase()}</span>`;
+
+  div.innerHTML = `
+    <span>${k.keys[0].toUpperCase()}</span>
+    <div class="key-progress"></div>
+  `;
+
   div.onmousedown = () => startNote(k.keys[0]);
   div.onmouseup = () => stopNote(k.keys[0]);
   div.onmouseleave = () => stopNote(k.keys[0]);
+
   piano.appendChild(div);
 });
 
@@ -59,9 +76,31 @@ function startNote(key) {
   osc.start();
 
   activeNotes.set(key, { osc, gain });
-  document
-    .querySelector(`[data-key="${mapping.keys[0]}"]`)
-    ?.classList.add("active");
+  const keyEl = document.querySelector(`[data-key="${mapping.keys[0]}"]`);
+  keyEl?.classList.add("active");
+
+  // Animate progress
+  const progressEl = keyEl.querySelector(".key-progress");
+  if (progressEl) {
+    progressEl.style.height = "0%";
+    const duration = 1000; // 1 second for full bar
+    let startTime = null;
+
+    function animate(timestamp) {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const percent = Math.min((elapsed / duration) * 100, 100);
+      progressEl.style.height = percent + "%";
+
+      if (activeNotes.has(key)) {
+        requestAnimationFrame(animate);
+      } else {
+        progressEl.style.height = "0%";
+      }
+    }
+
+    requestAnimationFrame(animate);
+  }
 }
 
 function stopNote(key) {
@@ -73,10 +112,14 @@ function stopNote(key) {
   note.osc.stop(now + 0.55);
 
   activeNotes.delete(key);
+
   const mapping = findNote(key);
-  document
-    .querySelector(`[data-key="${mapping.keys[0]}"]`)
-    ?.classList.remove("active");
+  const keyEl = document.querySelector(`[data-key="${mapping.keys[0]}"]`);
+  keyEl?.classList.remove("active");
+
+  // Reset progress bar
+  const progressEl = keyEl.querySelector(".key-progress");
+  if (progressEl) progressEl.style.height = "0%";
 }
 
 document.onkeydown = (e) => !e.repeat && startNote(e.key.toLowerCase());
