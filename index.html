@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Keyboard Piano</title>
+
+<style>
+body {
+    background: radial-gradient(circle at top, #111 0%, #000 70%);
+    font-family: system-ui, sans-serif;
+    color: white;
+    text-align: center;
+    padding: 40px;
+}
+
+h1 {
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.piano {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 40px;
+}
+
+.key {
+    width: 60px;
+    height: 220px;
+    background: linear-gradient(#fff, #ddd);
+    border-radius: 8px;
+    box-shadow:
+        inset 0 -6px 0 #bbb,
+        0 10px 30px rgba(0,0,0,.6);
+    position: relative;
+    cursor: pointer;
+    transition: all 0.08s ease;
+}
+
+.key span {
+    position: absolute;
+    bottom: 12px;
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+    color: #333;
+}
+
+.key.active {
+    background: linear-gradient(#4cf, #29b);
+    box-shadow:
+        0 0 25px #3cf,
+        inset 0 -4px 0 #1a8;
+    transform: translateY(4px);
+}
+
+.controls {
+    margin-top: 40px;
+}
+
+button {
+    background: #222;
+    color: #fff;
+    border: 1px solid #555;
+    padding: 10px 20px;
+    margin: 6px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #333;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🎹 Keyboard Piano</h1>
+<p>Use keys: Q W E R T Y U I O P [ ] \</p>
+
+<div class="piano" id="piano"></div>
+
+<div class="controls">
+    <button onclick="playMelody('scale')">Play Scale</button>
+    <button onclick="playMelody('twinkle')">Play Melody</button>
+</div>
+
+<script>
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContext();
+
+const keyMap = [
+    { key: 'q', note: 261.63 }, // C4
+    { key: 'w', note: 293.66 },
+    { key: 'e', note: 329.63 },
+    { key: 'r', note: 349.23 },
+    { key: 't', note: 392.00 },
+    { key: 'y', note: 440.00 },
+    { key: 'u', note: 493.88 },
+    { key: 'i', note: 523.25 },
+    { key: 'o', note: 587.33 },
+    { key: 'p', note: 659.25 },
+    { key: '[', note: 698.46 },
+    { key: ']', note: 783.99 },
+    { key: '\\', note: 880.00 }
+];
+
+const activeNotes = new Map();
+const piano = document.getElementById('piano');
+
+keyMap.forEach(k => {
+    const div = document.createElement('div');
+    div.className = 'key';
+    div.dataset.key = k.key;
+
+    div.innerHTML = `<span>${k.key.toUpperCase()}</span>`;
+
+    div.addEventListener('mousedown', () => startNote(k.key));
+    div.addEventListener('mouseup', () => stopNote(k.key));
+    div.addEventListener('mouseleave', () => stopNote(k.key));
+
+    piano.appendChild(div);
+});
+
+function startNote(key) {
+    if (activeNotes.has(key)) return;
+
+    audioCtx.resume();
+
+    const freq = keyMap.find(k => k.key === key)?.note;
+    if (!freq) return;
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+
+    gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.4, audioCtx.currentTime + 0.02);
+
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start();
+
+    activeNotes.set(key, { osc, gain });
+    setKeyActive(key, true);
+}
+
+function stopNote(key) {
+    const note = activeNotes.get(key);
+    if (!note) return;
+
+    note.gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+    note.osc.stop(audioCtx.currentTime + 0.09);
+
+    activeNotes.delete(key);
+    setKeyActive(key, false);
+}
+
+function setKeyActive(key, active) {
+    const el = document.querySelector(`.key[data-key="${key}"]`);
+    if (el) el.classList.toggle('active', active);
+}
+
+/* Keyboard events */
+document.addEventListener('keydown', e => {
+    if (!e.repeat) startNote(e.key.toLowerCase());
+});
+
+document.addEventListener('keyup', e => {
+    stopNote(e.key.toLowerCase());
+});
+
+/* Built-in melodies */
+const melodies = {
+    scale: [
+        ['q', 300], ['w', 300], ['e', 300], ['r', 300],
+        ['t', 300], ['y', 300], ['u', 300], ['i', 300]
+    ],
+    twinkle: [
+        ['q', 400], ['q', 400], ['t', 400], ['t', 400],
+        ['y', 400], ['y', 400], ['t', 800],
+        ['r', 400], ['r', 400], ['e', 400], ['e', 400],
+        ['w', 400], ['w', 400], ['q', 800]
+    ]
+};
+
+async function playMelody(name) {
+    for (const [key, duration] of melodies[name]) {
+        startNote(key);
+        await wait(duration);
+        stopNote(key);
+    }
+}
+
+function wait(ms) {
+    return new Promise(res => setTimeout(res, ms));
+}
+</script>
+
+</body>
+</html>
